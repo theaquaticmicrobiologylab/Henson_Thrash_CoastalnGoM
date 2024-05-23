@@ -184,27 +184,25 @@ ggplot(melted, aes(variable, RA)) +geom_boxplot(aes(), outlier.shape=NA) + geom_
   geom_point(colour = "grey90", size = 0.25) + theme_bw() + theme(axis.text.x = element_text(angle = 90))
 
 # Site Map
-require(reshape2)
+require(ggspatial)
 require(ggplot2)
-require(maps)
+require(sf)
+require(tigris)
+require(dplyr)
+require(nhdplusTools)
+
 
 LAmap<-read.csv("LatLong.csv", header=T)
-
-
-min_lat <- min(LAmap$Latitude) + -0.25
-max_lat <- max(LAmap$Latitude) + 0.25
-min_lon <- min(LAmap$Longitude) + -0.5
-max_lon <- max(LAmap$Longitude) + 0.5
-
-cbbPalette <- c("Blue3", "Brown2", "darkgoldenrod2", "seagreen", "darkmagenta", "tomato3", "yellow", "tan2", "cyan1" )
-
-world <- map_data("world",)
-gg1 <- ggplot() +
-  geom_polygon(data=world, aes(x=long, y=lat, group=group, alpha=0.5)) +
-  coord_fixed(1.2, xlim = c(min_lon, max_lon), ylim = c(min_lat, max_lat)) +
-  theme_bw()
-gg1
-#plot all Sites (LSUCC and others)
-gg2 <- gg1 + geom_point(data=LAmap, aes(Longitude, Latitude, color = Site), size =4) +geom_point(colour = "black", size = 2) + scale_color_manual(values=cbbPalette)+
-  labs(x="Longitude", y="Latitude") 
-gg2
+coast<-st_read("../Downloads/louisiana_coastline/")
+rivers<-st_read("../Downloads/USA_Rivers_and_Streams-shp/")
+louisiana_r <- rivers %>%
+    filter(State == "LA")
+louisiana <- states(cb = TRUE) %>%
+  filter(STUSPS == "LA")                      
+ggplot() + geom_sf(data=louisiana)  + theme_bw()  +   annotation_scale() +  annotation_north_arrow(location = "tr", which_north = "true",) + 
+                        geom_sf(data=basin, alpha=0, linetype = "dashed", size = 1.5)
+ggplot() + geom_sf(data=louisiana)  + theme_bw()  +   annotation_scale() +  
+                        annotation_north_arrow(location = "tr", which_north = "true",width = 0.2) + geom_sf(data=louisiana_r, color="light blue", alpha=0.75) + 
+                        geom_sf(data=basin, alpha=0, linetype = "dashed", size = 1.5) + coord_sf(xlim = c(min_lon, max_lon), ylim = c(min_lat, max_lat)) +
+                        geom_jitter(data=LAmap, aes(Longitude, Latitude, color=Descript, size=Salinity),alpha=0.5, stroke=0.5, width=0.2) + 
+                        scale_color_manual(values = c("steelblue","red", "orange2" ))+scale_size_continuous(range = c(3, 6))
